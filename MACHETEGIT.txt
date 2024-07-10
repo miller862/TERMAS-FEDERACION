@@ -1,0 +1,23 @@
+Para Clonar es.
+
+git init 
+
+git clone https://github.com/JuanMSo10/Grupo_12_Turismo.git
+
+********+
+Despues para subir es:
+
+git add.
+
+git commit -m "Comentario"
+
+git push
+
+***********
+(Tener en cuenta esto hacerlo siempre)
+(Cuando estemos por empezar a codear)
+Para descargar los cambios de los demas en el repositorio
+
+git fetch 
+
+git pull
