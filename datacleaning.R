@@ -1,5 +1,6 @@
 library(readxl)
 library(tidyverse)
+library(data.table)
 
 ?read_excel()
 
@@ -11,9 +12,11 @@ abr_24<-read_excel("data/INGRESO TERMAS GESTION MAROZZINI/ANIO 2024.xlsx",sheet 
 may_24<-read_excel("data/INGRESO TERMAS GESTION MAROZZINI/ANIO 2024.xlsx",sheet = 6,range ="A4:L35" )
 jun_24<-read_excel("data/INGRESO TERMAS GESTION MAROZZINI/ANIO 2024.xlsx",sheet = 7,range ="A4:L35" )
 
-A2024<-bind_rows(ene_24,feb_24,mar_24,abr_24,may_24,jun_24)
-A2024<-do.call("rbind",list(ene_24,feb_24,mar_24,abr_24,may_24,jun_24))
-?bind_rows
+#procedimiento para compilar un mes
+A2024<-rbindlist(list(ene_24,feb_24,mar_24,abr_24,may_24,jun_24))
+#procedimiento para borrar filas innecesarias
+A2024<-A2024 %>% 
+  filter(FECHA>=1)
 
 #2023
 ene_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 2,range ="A4:K35" )
