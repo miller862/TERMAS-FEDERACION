@@ -40,18 +40,27 @@ may_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 6
   mutate(MES="MAYO")
 jun_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 7,range ="A4:K35" )%>%
   mutate(MES="JUNIO")
-jul_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 8,range ="A4:K35" )%>%
-  mutate(MES="JULIO")
-ago_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 9,range ="A4:K35" )%>%
-  mutate(MES="AGOSTO")
-sep_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 10,range ="A4:K35" )%>%
-  mutate(MES="SEPTIEMBRE")
-oct_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 11,range ="A4:K35" )%>%
-  mutate(MES="OCTUBRE")
-nov_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 12,range ="A4:K35" )%>%
-  mutate(MES="NOVIEMBRE")
-dic_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 13,range ="A4:K35" )%>%
-  mutate(MES="DICIEMBRE")
+
+
+
+jul_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 8,range ="A4:L35" )%>%
+  mutate(MES="JULIO") %>% 
+  select(-ESTE)
+ago_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 9,range ="A4:L35" )%>%
+  mutate(MES="AGOSTO")%>% 
+  select(-ESTE)
+sep_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 10,range ="A4:L35" )%>%
+  mutate(MES="SEPTIEMBRE")%>% 
+  select(-ESTE)
+oct_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 11,range ="A4:L35" )%>%
+  mutate(MES="OCTUBRE")%>% 
+  select(-ESTE)
+nov_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 12,range ="A4:L35" )%>%
+  mutate(MES="NOVIEMBRE")%>% 
+  select(-ESTE)
+dic_23<-read_excel("data/INGRESO TERMAS GESTION MILLER/ANIO 2023.xlsx",sheet = 13,range ="A4:L35" )%>%
+  mutate(MES="DICIEMBRE")%>% 
+  select(-ESTE)
 
 #procedimiento para compilar un mes
 A2023<-rbindlist(list(ene_23,feb_23,mar_23,abr_23,may_23,jun_23,jul_23,ago_23,sep_23,oct_23,nov_23,dic_23)) %>% 
@@ -181,8 +190,8 @@ nov_19<-read_excel("data/INGRESO TERMAS GESTION RACEDO/ANIO 2019.xlsx",sheet = 1
 
 #DICIEMBRE SIN DATOS EN CAMBIO DE GESTION
 #CONSIDERO QUE CORRESPONDE MEJOR NO SUMARLO QUE SUMARLO EN 0
-#dic_19<-read_excel("data/INGRESO TERMAS GESTION RACEDO/ANIO 2019.xlsx",sheet = 13,range ="A4:I35" )%>%
-#  mutate(MES="DICIEMBRE")
+dic_19<-read_excel("data/INGRESO TERMAS GESTION RACEDO/ANIO 2019.xlsx",sheet = 13,range ="A4:I35" )%>%
+  mutate(MES="DICIEMBRE")
 
 A2019<-rbindlist(list(ene_19,feb_19,mar_19,abr_19,may_19,jun_19,jul_19,ago_19,sep_19,oct_19,nov_19,dic_19)) %>% 
   filter(FECHA>=1) %>%                                     #procedimiento para borrar filas innecesarias
@@ -451,7 +460,7 @@ A2012<-rbindlist(list(ene_12,feb_12,mar_12,abr_12,may_12,jun_12,jul_12,ago_12,se
 dic_11<-read_excel("data/INGRESO TERMAS GESTION RACEDO/ANIO 2011.xlsx",sheet = 2,range ="A4:H35" )%>%
   mutate(MES="DICIEMBRE") %>% 
   filter(FECHA>=1) %>%                                    
-  mutate(ANIO=as.factor("2012")) %>%                       
+  mutate(ANIO=as.factor("2011")) %>%                       
   relocate(ANIO,.before =DIA) %>% 
   relocate(MES,.before=DIA)%>%
   mutate(ACUATICO=NA) %>% 
@@ -461,8 +470,6 @@ dic_11<-read_excel("data/INGRESO TERMAS GESTION RACEDO/ANIO 2011.xlsx",sheet = 2
 ####pasamos a un unico dataset
 
 TODOCRUDO<-rbindlist(list(dic_11,A2012,A2013,A2014,A2015,A2016,A2017,A2018,A2019,A2020,A2021,A2022,A2023,A2024))
-
-glimpse(TODOCRUDO)
 
 TODO<-TODOCRUDO %>% 
   mutate(MES= as.factor(MES),
@@ -475,7 +482,40 @@ TODO<-TODOCRUDO %>%
   mutate(TOTALNETO=TOTAL-LIBERADOS) %>% 
   relocate(TIEMPO,.after=TOTALNETO) %>% 
   mutate(ID=row_number())
-#pasa algo con el nombre de la columna POR DIA, pero no hace problema para ser llamada
-glimpse(TODO)
+
+# Define el vector de etiquetas de los meses
+meses <- c(
+  "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
+  "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE")
+
+TODO<-TODO %>%
+  mutate(MES = case_when( MES == "ENERO" ~ 1, MES == "FEBRERO" ~ 2,
+                             MES == "MARZO" ~ 3, MES == "ABRIL" ~ 4,
+                             MES == "MAYO" ~ 5, MES == "JUNIO" ~ 6,
+                             MES == "JULIO" ~ 7, MES == "AGOSTO" ~ 8,
+                             MES == "SEPTIEMBRE" ~ 9, MES == "OCTUBRE" ~ 10,
+                             MES == "NOVIEMBRE" ~ 11, MES == "DICIEMBRE" ~ 12, TRUE ~ NA_real_ ))
+         
 
 
+# Convierte la columna MES a factor con etiquetas de los meses
+TODO<- TODO %>%
+  mutate(MES = factor(MES, levels = 1:12, labels = meses),
+         LIBERADOS = ifelse(is.na(LIBERADOS), 0, LIBERADOS),
+         TOTAL = ifelse(is.na(TOTAL), 0, TOTAL),
+         TOTALNETO=TOTAL-LIBERADOS)
+
+
+ingresos_anuales<-TODO%>%
+  group_by(ANIO) %>% 
+  summarise(ventasNETAS=sum(TOTALNETO),
+            INGRESOS=sum(TOTAL))
+
+ingresos_mensuales<-TODO%>%
+  group_by(ANIO,MES) %>% 
+  summarise(ventasNETAS=sum(TOTALNETO),
+            INGRESOS=sum(TOTAL)) 
+
+ingresos_mensuales%>%
+  filter(MES=="DICIEMBRE")
+  
