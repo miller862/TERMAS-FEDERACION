@@ -1,3 +1,4 @@
+install.packages('ggplot2')
 library(readxl)
 library(tidyverse)
 library(data.table)
@@ -499,12 +500,18 @@ TODO<-TODO %>%
 
 
 # Convierte la columna MES a factor con etiquetas de los meses
+'''
 TODO<- TODO %>%
   mutate(MES = factor(MES, levels = 1:12, labels = meses),
          LIBERADOS = ifelse(is.na(LIBERADOS), 0, LIBERADOS),
          TOTAL = ifelse(is.na(TOTAL), 0, TOTAL),
          TOTALNETO=TOTAL-LIBERADOS)
-
+'''
+TODO<- TODO %>%
+  mutate(MES = factor(MES),
+         LIBERADOS = ifelse(is.na(LIBERADOS), 0, LIBERADOS),
+         TOTAL = ifelse(is.na(TOTAL), 0, TOTAL),
+         TOTALNETO=TOTAL-LIBERADOS)
 
 ingresos_anuales<-TODO%>%
   group_by(ANIO) %>% 
@@ -516,6 +523,59 @@ ingresos_mensuales<-TODO%>%
   summarise(ventasNETAS=sum(TOTALNETO),
             INGRESOS=sum(TOTAL)) 
 
+
+ingresos_mensuales$fecha<-as.Date(paste(ingresos_mensuales$ANIO,
+                                        ingresos_mensuales$MES,'01',
+                                        sep = '-',
+                                        format='%Y-%m-%d'))
+
+ingresos_mensuales %>% 
+  filter(MES %in% c("ENERO",'FEBRERO','MARZO','ABRIL','MAYO','JUNIO')) %>% 
+  group_by(ANIO) %>% 
+  summarise(total=sum(ventasNETAS)) %>% 
+  view()
+
 ingresos_mensuales%>%
   filter(MES=="DICIEMBRE")
   
+
+### pedido previaje
+
+previaje<-read.csv('data/pedido-previaje/loc_origen_destino_mes.csv',encoding="UTF-8")
+
+destino_fed<-previaje %>% 
+  filter(provincia_destino=="Entre Ríos") %>%
+  filter(localidad_destino=="Federación")
+
+#total de turistas recibidos por previaje
+sum(destino_fed$viajeros)
+sum(destino_fed$viajes)
+
+#Turistas recibidos por edicion de previaje
+destino_fed %>% 
+  group_by(edicion) %>% 
+  summarise(total_viajes=sum(viajes),
+            total_viajeros=sum(viajeros))
+
+#turistas recibidos por localidad de origen en todo el previaje
+destino_fed %>% 
+  group_by(localidad_origen) %>% 
+  summarise(total_viajes=sum(viajes),
+            total_viajeros=sum(viajeros)) %>% 
+  arrange(-total_viajeros) %>% 
+  view()
+
+#Federaenses que se sirvieron del previaje para vacacionar en la argentina
+origen_fed<-previaje %>% 
+  filter(localidad_origen=="Federación") %>% 
+  group_by(localidad_origen) %>% 
+  summarise(total_viajes=sum(viajes),
+            total_viajeros=sum(viajeros))
+
+# turistas recibidos por fecha
+previaje_por_fecha<-destino_fed %>% 
+  group_by(mes_inicio) %>% 
+  summarise(
+            total_viajes=sum(viajes),
+            total_viajeros=sum(viajeros)) %>% 
+  view()
