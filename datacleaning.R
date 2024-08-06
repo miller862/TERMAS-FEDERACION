@@ -1,9 +1,11 @@
-install.packages('ggplot2')
+
 library(readxl)
 library(tidyverse)
 library(data.table)
 library(ggplot2)
-
+library(rstatix)
+install.packages("lubridate")
+library(lubridate)
 
 #2024
 ene_24<-read_excel("data/INGRESO TERMAS GESTION MAROZZINI/ANIO 2024.xlsx",sheet = 2,range ="A4:L35" ) %>% 
@@ -523,22 +525,55 @@ ingresos_mensuales<-TODO%>%
   summarise(ventasNETAS=sum(TOTALNETO),
             INGRESOS=sum(TOTAL)) 
 
-
 ingresos_mensuales$fecha<-as.Date(paste(ingresos_mensuales$ANIO,
-                                        ingresos_mensuales$MES,'01',
-                                        sep = '-',
-                                        format='%Y-%m-%d'))
+                                         ingresos_mensuales$MES,'01',
+                                         sep = '-',
+                                         format='%Y-%m-%d'))
 
-ingresos_mensuales %>% 
-  filter(MES %in% c("ENERO",'FEBRERO','MARZO','ABRIL','MAYO','JUNIO')) %>% 
+
+primer_semestre<-ingresos_mensuales %>% 
+  filter(MES %in% c(1,2, 3, 4, 5,6)) %>% 
   group_by(ANIO) %>% 
   summarise(total=sum(ventasNETAS)) %>% 
   view()
 
+
+primer_semestre_mes<-ingresos_mensuales %>% 
+  filter(MES %in% c(1,2, 3, 4, 5,6)) %>% 
+  group_by(ANIO, MES) %>% 
+  summarise(total=sum(ventasNETAS)) %>% 
+  view()
+
+primer_semestre_mes$fecha<-as.Date(paste(primer_semestre_mes$ANIO,
+                                         primer_semestre_mes$MES,'01',
+                                        sep = '-',
+                                        format='%Y-%m-%d'))
+
 ingresos_mensuales%>%
-  filter(MES=="DICIEMBRE")
+  filter(MES==12)
   
 
+###Carga de datos de PBI
+
+pbi<-read_excel("data/PBI.xlsx")
+#Agregamos un anio al PBI para ver los efectos sobre la temporada siguiente
+pbi<-pbi %>% mutate(ANIO=ANIO+1)
+pbi$ANIO<-as.factor(pbi$ANIO)
+
+###carga de TC
+tc<-read.csv("data/ITCRM.csv", sep = ";")
+tc$ANIO<-tc$ï..Etiquetas.de.fila
+tc$MES<-tc$Meses
+tc$tipo_cambio<-tc$Promedio.de.ITCRM
+
+tc<-tc %>% select(-ï..Etiquetas.de.fila, -Meses, -Promedio.de.ITCRM)
+tc<-tc %>% mutate(ANIO=ANIO)
+tc$ANIO<-as.factor(tc$ANIO)
+tc$tipo_cambio <- gsub(",", ".", tc$tipo_cambio)
+tc$tipo_cambio<-as.numeric(tc$tipo_cambio)
+str(tc)
+
+tc<-tc %>% group_by(ANIO) %>% summarise(tipo_cambio=mean(tipo_cambio))
 ### pedido previaje
 
 previaje<-read.csv('data/pedido-previaje/loc_origen_destino_mes.csv',encoding="UTF-8")
@@ -578,4 +613,89 @@ previaje_por_fecha<-destino_fed %>%
   summarise(
             total_viajes=sum(viajes),
             total_viajeros=sum(viajeros)) %>% 
-  view()
+  mutate(fecha=as.Date(paste(mes_inicio, '01',sep = '-', format='%Y-%m-%d')))
+  
+
+
+primer_semestre_mes$fecha<-as.Date(paste(primer_semestre_mes$ANIO,
+                                         primer_semestre_mes$MES,'01',
+                                         sep = '-',
+                                         format='%Y-%m-%d'))
+
+tabla_combinada<-left_join(ingresos_mensuales, previaje_por_fecha, by='fecha')
+tabla_combinada<-left_join(tabla_combinada, valores_entradas, by="fecha")
+view(tabla_combinada)
+enero<-tabla_combinada %>% filter(month(fecha)==1)
+enero
+tabla_combinada<-tabla_combinada %>% mutate(previaje_ind=ifelse(is.na(total_viajeros), 0,1))
+tabla_combinada$previaje_ind<-as.factor(tabla_combinada$previaje_ind)
+
+tabla_combinada$porc_previaje<-(tabla_combinada$total_viajeros/tabla_combinada$INGRESOS)*100
+
+####graficos
+graf1<-primer_semestre_mes %>% ggplot(aes(x=fecha, y=total)) + geom_col()
+graf2<-primer_semestre%>% ggplot(aes(x=ANIO, y=total)) + geom_col()
+
+plot(tabla_combinada$total_viajeros, tabla_combinada$INGRESOS)
+tabla_combinada<-tabla_combinada %>% mutate(total_viajeros2=ifelse(is.na(total_viajeros), 0, total_viajeros))
+plot(enero$INGRESOS, enero$total_viajeros2)
+primer_semestre%>% ggplot() + geom_col(aes(x=ANIO, y=total))+geom_line(data = pbi, aes(y="PBI"))
+
+valores_entradas<-read_excel("data/VALORES entradas.xlsx")
+valores_entradas$fecha<-as.Date(valores_entradas$fecha, format='%Y-%m-%d')
+tabla_combinada$montos_ingresos<-tabla_combinada$INGRESOS*tabla_combinada$`ENTRADA PROMEDIO`
+
+
+
+#Grafico de linea y barra - Entradas y PBI
+# Ajustar el coeficiente de escala
+coef <- 1000  # Ajustar este valor según sea necesario
+
+# Definir los límites del eje secundario
+sec_axis_limits <- c(-15, 15)
+
+# Calcular los límites correspondientes del eje primario
+
+primary_axis_limits <- sec_axis_limits * coef
+
+primer_trimestre<-primer_semestre %>% filter(meses<3)
+
+ggplot(primer_semestre, aes(x = ANIO)) +
+  geom_col(aes(y = total), fill = "blue") + 
+  geom_line(data = pbi, aes(x = ANIO, y = PBI * coef, group = 1), color = "red", size=3 ) + 
+  scale_y_continuous(
+    name = "Total",
+    sec.axis = sec_axis(~ . / coef, name = "PBI")
+  ) +
+  coord_cartesian(ylim = primary_axis_limits) + 
+  theme_minimal() +
+  labs(x = "Año", y = "Total") +
+  theme(
+    axis.title.y = element_text(color = "blue"),
+    axis.title.y.right = element_text(color = "red")
+  )
+
+# Definir los límites del eje secundario
+coef<-2500
+sec_axis_limits <- c(70, 150)
+
+# Calcular los límites correspondientes del eje primario
+
+primary_axis_limits <- sec_axis_limits * coef
+
+ggplot(primer_semestre, aes(x = ANIO)) +
+  geom_col(aes(y = total), fill = "blue") + 
+  geom_line(data = tc, aes(x = ANIO, y = tipo_cambio * coef, group = 1), color = "red", size=3 ) + 
+  scale_y_continuous(
+    name = "Total",
+    sec.axis = sec_axis(~ . / coef, name = "PBI")
+  ) +
+  coord_cartesian(ylim = primary_axis_limits) + 
+  theme_minimal() +
+  labs(x = "Año", y = "Total") +
+  theme(
+    axis.title.y = element_text(color = "blue"),
+    axis.title.y.right = element_text(color = "red")
+  )
+
+
