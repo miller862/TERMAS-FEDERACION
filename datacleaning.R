@@ -4,7 +4,6 @@ library(tidyverse)
 library(data.table)
 library(ggplot2)
 library(rstatix)
-install.packages("lubridate")
 library(lubridate)
 
 #2024
