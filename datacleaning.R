@@ -501,13 +501,13 @@ TODO<-TODO %>%
 
 
 # Convierte la columna MES a factor con etiquetas de los meses
-'''
+
 TODO<- TODO %>%
   mutate(MES = factor(MES, levels = 1:12, labels = meses),
          LIBERADOS = ifelse(is.na(LIBERADOS), 0, LIBERADOS),
          TOTAL = ifelse(is.na(TOTAL), 0, TOTAL),
          TOTALNETO=TOTAL-LIBERADOS)
-'''
+
 TODO<- TODO %>%
   mutate(MES = factor(MES),
          LIBERADOS = ifelse(is.na(LIBERADOS), 0, LIBERADOS),
@@ -531,14 +531,14 @@ ingresos_mensuales$fecha<-as.Date(paste(ingresos_mensuales$ANIO,
 
 
 primer_semestre<-ingresos_mensuales %>% 
-  filter(MES %in% c(1,2, 3, 4, 5,6)) %>% 
+  filter(MES %in% c( "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO","JUNIO")) %>% 
   group_by(ANIO) %>% 
   summarise(total=sum(ventasNETAS)) %>% 
   view()
 
 
 primer_semestre_mes<-ingresos_mensuales %>% 
-  filter(MES %in% c(1,2, 3, 4, 5,6)) %>% 
+  filter(MES %in% c( "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO","JUNIO")) %>% 
   group_by(ANIO, MES) %>% 
   summarise(total=sum(ventasNETAS)) %>% 
   view()
@@ -697,4 +697,5 @@ ggplot(primer_semestre, aes(x = ANIO)) +
     axis.title.y.right = element_text(color = "red")
   )
 
-
+#Carga de datos de valor de entradas
+write.csv(ingresos_mensuales, "ingresos mensuales.csv")
